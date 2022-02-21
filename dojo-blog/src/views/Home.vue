@@ -1,41 +1,43 @@
 <template>
   <div class="home">
     <h1>Home</h1>
-    <input type="text" v-model="search">
-    <p>Search Term - {{ search }}</p>
-    <div v-for="name in matchingNames" :key="name">{{ name }}</div>
-    <button @click="handleClick">Stop Watching</button>
+    <div v-if="error">{{ error }}</div>
+    <div v-if="posts.length">
+      <PostList :posts="posts" />
+    </div>
+    <div v-else>Loading...</div>
   </div>
 </template>
 
 <script>
-import { computed, ref, watch, watchEffect } from 'vue'
+import PostList from '../components/PostList.vue'
+import { ref } from 'vue'
 
 export default {
   name: 'Home',
+  components: { PostList },
   setup() {
 
-    const search = ref('')
-    const names = ref(['mario', 'luigi', 'yoshi', 'toad', 'bowser', 'koopa', 'peach'])
+    const posts = ref([])
+    const error = ref(null)
 
-    const stopWatch = watch(search, () => {
-      console.log('watch function ran')
-    })
-
-    const stopEffect = watchEffect(() => {
-      console.log('watch effect function ran', search.value)
-    })
-
-    const matchingNames = computed(() => {
-      return names.value.filter((name) => name.includes(search.value))
-    })
-
-    const handleClick = () => {
-      stopWatch()
-      stopEffect()
+    const load = async () => {
+      try {
+        let data = await fetch('http://localhost:3000/posts')
+        if (!data.ok) {
+          throw Error('no data available')
+        }
+        posts.value = await data.json()
+      } 
+      catch(err) { 
+        error.value = err.message
+        console.log(error.value)
+      }
     }
 
-    return { names, search, matchingNames, handleClick }
+    load()
+
+    return { posts, error }
   }
 }
 </script>
